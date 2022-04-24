@@ -58,7 +58,7 @@
 
     </div>
     <?php if (!empty($products)): ?>
-        <table class="table table-striped">
+        <table class="table table-striped" style="font-size: 0.94em;">
             <thead>
             <?php
             $headings = array(
