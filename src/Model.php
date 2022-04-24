@@ -2,7 +2,6 @@
 
 namespace Sterkh\Activica;
 
-use Exception;
 use PDO;
 
 class Model

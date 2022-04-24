@@ -7,53 +7,60 @@ use Sterkh\Activica\Model;
 
 class Shop
 {
-    public $parsed;
+    private $model;
 
-    public function parse($path) {
-         if (file_exists($path)) {
-            $this->parsed = simplexml_load_file($path);
+    public function __construct()
+    {
+        $this->model = new Model();
+        if (!$this->model->getOption('parsed')) {
+            $data = $this->parse(__DIR__ . '/goods.xml');
+            $this->save($data);
         }
+        $this->view();
     }
 
-    public function view()
+    private function parse($path)
     {
-        $model = new Model();
-        // check for filters;
-        $title = $model->getOption('company');
-        $vendors = $model->getAll('vendors');
+        if (file_exists($path)) {
+            return simplexml_load_file($path);
+        }
+        return false;
+    }
 
-        $products = $model->getProducts();
+    private function view()
+    {
+        // check for filters;
+        $title = $this->model->getOption('company');
+        $vendors = $this->model->getAll('vendors');
+
+        $products = $this->model->getProducts();
 
         $props = [];
-        foreach($model->getAll('product_props') as $p){
+        foreach ($this->model->getAll('product_props') as $p) {
             $props[$p['product_id']][] = $p['value'];
         }
 
         $cats = [];
-        foreach($model->getAll('categories') as $c) {
+        foreach ($this->model->getAll('categories') as $c) {
             $cats[$c['id']] = $c;
         }
 
         include __DIR__ . '/../templates/index.php';
     }
-    public function isParsed() {
-        $model = new Model();
-        return $model->getOption('parsed');
-    }
-    public function save()
+
+    private function save($data)
     {
-        $model = new Model();
         $options = [
-            'name' => (string)$this->parsed->shop->name,
-            'company' => (string)$this->parsed->shop->company,
-            'url' => (string)$this->parsed->shop->url
+            'name' => (string)$data->shop->name,
+            'company' => (string)$data->shop->company,
+            'url' => (string)$data->shop->url
         ];
         foreach ($options as $key => $opt) {
-            $model->setOption($key, $opt);
+            $this->model->setOption($key, $opt);
         }
         // categories;
         $cats = [];
-        foreach ($this->parsed->shop->categories->category as $cat) {
+        foreach ($data->shop->categories->category as $cat) {
             $attrs = $cat->attributes();
             $cats[(int)$attrs->parentId][] = array(
                 'id' => (string)$attrs->id,
@@ -62,14 +69,14 @@ class Shop
             );
         }
         foreach ($cats as $cat) {
-            $model->multiInsert('categories', array_keys($cat[0]), $cat);
+            $this->model->multiInsert('categories', array_keys($cat[0]), $cat);
         }
 
         //products
         $products = [];
         $props = [];
         $vendors = [];
-        foreach ($this->parsed->shop->offers->offer as $p) {
+        foreach ($data->shop->offers->offer as $p) {
             $attrs = $p->attributes();
             $products[] = array(
                 'id' => (string)$attrs->id,
@@ -99,10 +106,10 @@ class Shop
             array_push($vendors, ['name' => (string)$p->vendor]);
         }
 
-        $model->multiInsert('vendors', array_keys($vendors[0]), $vendors);
-        $model->multiInsert('product_props', array_keys($props[0]), $props);
+        $this->model->multiInsert('vendors', array_keys($vendors[0]), $vendors);
+        $this->model->multiInsert('product_props', array_keys($props[0]), $props);
 
-        $vnd = $model->getAll('vendors');
+        $vnd = $this->model->getAll('vendors');
         $vndIds = [];
         foreach ($vnd as $vendor) {
             $vndIds[$vendor['name']] = $vendor['id'];
@@ -112,9 +119,9 @@ class Shop
             unset($p['vendor']);
             unset($p);
         }
-        $model->multiInsert('products', array_keys($products[0]), $products);
+        $this->model->multiInsert('products', array_keys($products[0]), $products);
 
-        $model->setOption('parsed', 1);
+        $this->model->setOption('parsed', 1);
 
     }
 
