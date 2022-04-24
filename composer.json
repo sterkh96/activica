@@ -1,0 +1,15 @@
+{
+    "name": "sterkh/activica",
+    "autoload": {
+        "psr-4": {
+            "Sterkh\\Activica\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ilya Sterkhov",
+            "email": "sterkh96@gmail.com"
+        }
+    ],
+    "require": {}
+}
